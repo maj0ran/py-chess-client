@@ -226,7 +226,7 @@ while running:
             if (event.button == pygame.BUTTON_RIGHT):
                 dest = grid.get_field(x, y)
                 src = grid.selected
-                b = [src.x + 97, src.y + 49, dest.x + 97, dest.y + 49]
+                b = [src.x + 97, src.y + 49, dest.x + 97, dest.y + 49, 81]
                 print("Sending chess move: " + chr(src.x + 97) +
                       chr(src.y + 49) + chr(dest.x + 97) + chr(dest.y + 49) + "...")
                 client.send(bytes(b))
