@@ -11,16 +11,17 @@ BOARD_WHITE = "0xf0e0d0"
 BG = "0x8f5b26"
 
 
-BLACK = 0
-WHITE = 1
+BLACK = 0x20
+WHITE = 0x00
 
-KING = 1 << 1
-QUEEN = 1 << 2
-ROOK = 1 << 3
-BISHOP = 1 << 4
-KNIGHT = 1 << 5
-PAWN = 1 << 6
+KING = 75
+QUEEN = 81
+ROOK = 82
+BISHOP = 66
+KNIGHT = 78
+PAWN = 80
 
+EMPTY = 88
 
 class Pos:
     def __init__(self, x, y):
@@ -45,42 +46,42 @@ class ChessGrid:
         self.size = 0
 
         self.res = {}
-        self.res[0] = None,
-        self.res[ROOK | WHITE] = pygame.image.load("res/r_w.png")
-        self.res[ROOK | BLACK] = pygame.image.load("res/r_b.png")
-        self.res[KNIGHT | WHITE] = pygame.image.load("res/n_w.png")
-        self.res[KNIGHT | BLACK] = pygame.image.load("res/n_b.png")
-        self.res[BISHOP | WHITE] = pygame.image.load("res/b_w.png")
-        self.res[BISHOP | BLACK] = pygame.image.load("res/b_b.png")
-        self.res[QUEEN | WHITE] = pygame.image.load("res/q_w.png")
-        self.res[QUEEN | BLACK] = pygame.image.load("res/q_b.png")
-        self.res[KING | WHITE] = pygame.image.load("res/k_w.png")
-        self.res[KING | BLACK] = pygame.image.load("res/k_b.png")
-        self.res[PAWN | WHITE] = pygame.image.load("res/p_w.png")
-        self.res[PAWN | BLACK] = pygame.image.load("res/p_b.png")
+        self.res[EMPTY] = None,
+        self.res[ROOK + WHITE] = pygame.image.load("res/r_w.png")
+        self.res[ROOK + BLACK] = pygame.image.load("res/r_b.png")
+        self.res[KNIGHT + WHITE] = pygame.image.load("res/n_w.png")
+        self.res[KNIGHT + BLACK] = pygame.image.load("res/n_b.png")
+        self.res[BISHOP + WHITE] = pygame.image.load("res/b_w.png")
+        self.res[BISHOP + BLACK] = pygame.image.load("res/b_b.png")
+        self.res[QUEEN + WHITE] = pygame.image.load("res/q_w.png")
+        self.res[QUEEN + BLACK] = pygame.image.load("res/q_b.png")
+        self.res[KING + WHITE] = pygame.image.load("res/k_w.png")
+        self.res[KING + BLACK] = pygame.image.load("res/k_b.png")
+        self.res[PAWN + WHITE] = pygame.image.load("res/p_w.png")
+        self.res[PAWN + BLACK] = pygame.image.load("res/p_b.png")
 
-        self.field = [[0 for _ in range(8)] for _ in range(8)]
+        self.field = [[EMPTY for _ in range(8)] for _ in range(8)] # Set all empty fields
 
-        self.field[0][0] = ROOK | WHITE
-        self.field[7][0] = ROOK | WHITE
-        self.field[0][7] = ROOK | BLACK
-        self.field[7][7] = ROOK | BLACK
-        self.field[1][0] = KNIGHT | WHITE
-        self.field[6][0] = KNIGHT | WHITE
-        self.field[1][7] = KNIGHT | BLACK
-        self.field[6][7] = KNIGHT | BLACK
-        self.field[2][0] = BISHOP | WHITE
-        self.field[5][0] = BISHOP | WHITE
-        self.field[2][7] = BISHOP | BLACK
-        self.field[5][7] = BISHOP | BLACK
-        self.field[3][0] = QUEEN | WHITE
-        self.field[3][7] = QUEEN | BLACK
-        self.field[4][7] = KING | BLACK
-        self.field[4][0] = KING | WHITE
+        self.field[0][0] = ROOK + WHITE
+        self.field[7][0] = ROOK + WHITE
+        self.field[0][7] = ROOK + BLACK
+        self.field[7][7] = ROOK + BLACK
+        self.field[1][0] = KNIGHT + WHITE
+        self.field[6][0] = KNIGHT + WHITE
+        self.field[1][7] = KNIGHT + BLACK
+        self.field[6][7] = KNIGHT + BLACK
+        self.field[2][0] = BISHOP + WHITE
+        self.field[5][0] = BISHOP + WHITE
+        self.field[2][7] = BISHOP + BLACK
+        self.field[5][7] = BISHOP + BLACK
+        self.field[3][0] = QUEEN + WHITE
+        self.field[3][7] = QUEEN + BLACK
+        self.field[4][7] = KING + BLACK
+        self.field[4][0] = KING + WHITE
 
         for x in range(0, 8):
-            self.field[x][1] = PAWN | WHITE
-            self.field[x][6] = PAWN | BLACK
+            self.field[x][1] = PAWN + WHITE
+            self.field[x][6] = PAWN + BLACK
 
     def get(self, pos: Pos) -> int:
         return self.field[pos.x][pos.y]
@@ -149,7 +150,7 @@ class ChessGrid:
                     pygame.draw.rect(display, "0x65a326", rect)
 
                 # pieces
-                if grid.get(Pos(xi, yi)) != 0:
+                if grid.get(Pos(xi, yi)) != EMPTY:
                     res = grid.get_res(grid.get(Pos(xi, yi)))
                     display.blit(res, (rect_x, rect_y))
 
@@ -181,15 +182,16 @@ class Client:
         length = int.from_bytes(length, 'big')
         print("waiting for " + str(length) + " bytes...")
         content = self.socket.recv(length)
-        print("received " + str(length) + " bytes.")
-
+        print("received " + str(len(content)) + " bytes.")
+        print("content: " + str(content))
         changes = []
         if length == 0:
             return
-        for i in range(0, length, 2):
-            field = content[i]
-            piece = content[i + 1]
-            changes.append((field, piece))
+        for i in range(1, length, 3):
+            x = content[i]
+            y = content[i + 1]
+            piece = content[i + 2]
+            changes.append((x, y, piece))
 
         print("list of changes: ", changes)
         return changes
@@ -226,18 +228,18 @@ while running:
             if (event.button == pygame.BUTTON_RIGHT):
                 dest = grid.get_field(x, y)
                 src = grid.selected
-                b = [src.x + 97, src.y + 49, dest.x + 97, dest.y + 49, 81]
+                b = [0xD, 0x20, src.x + 97, src.y + 49, dest.x + 97, dest.y + 49]
                 print("Sending chess move: " + chr(src.x + 97) +
                       chr(src.y + 49) + chr(dest.x + 97) + chr(dest.y + 49) + "...")
                 client.send(bytes(b))
                 response = client.recv()
                 if response is not None:
                     for i in response:
-                        tile = i[0]
-                        piece = i[1]
+                        x = i[0] - 97
+                        y = i[1] - 49
+                        piece = i[2]
 
-                        x = int(tile % 8)
-                        y = 7 - int(tile / 8)
+                        print("setting: ", x, y, str(piece))
 
                         grid.set(Pos(x, y), piece)
 
