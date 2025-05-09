@@ -1,5 +1,6 @@
 import pygame
 import random
+from interface import *
 
 # --- Constants ---
 SCREEN_WIDTH = 800
@@ -211,6 +212,7 @@ class Application:
             self.screen.fill(BLACK)  # Clear screen
             if self.active_scene:
                 self.active_scene.draw(self.screen)
+                self.screen.blit(self.active_scene.surface)
 
             pygame.display.flip()
 

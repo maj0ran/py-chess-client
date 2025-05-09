@@ -4,7 +4,7 @@ import pygame
 import socket
 import sys
 import time
-from interface import Application
+from interface import *
 
 
 WIN_WIDTH = 1280
@@ -50,7 +50,19 @@ class Client:
 
 
 app = Application()
+
+# Create and add scenes
+scene1 = ChessScene(app)
+scene2 = MainScene(app)
+
+app.add_scene("scene1", scene1)
+app.add_scene("scene2", scene2)
+
+# Set initial scene
+app.switch_scene("scene1")
+
 app.run()
+
 # pygame setup
 # pygame.init()
 # display = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
@@ -105,5 +117,3 @@ app.run()
 #
 #     pygame.display.flip()
 #     clock.tick(60)  # limits FPS to 60
-
-pygame.quit()

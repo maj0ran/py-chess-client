@@ -2,9 +2,11 @@
 
 
 import pygame
+from pygame import Surface
 import thorpy as tp
 from chess import ChessGrid, Pos
 
+FPS = 60
 BLACK = 0x20
 WHITE = 0x00
 SCREEN_WIDTH = 1200
@@ -25,92 +27,78 @@ def create_game():
 class Application:
     def __init__(self):
         pygame.init()
-        self.width = 1200
-        self.height = 900
-        self.surface = pygame.display.set_mode((self.width, self.height))
-
-        tp.init(self.surface)  # bind screen to gui elements and set theme
+        self.clock = pygame.time.Clock()
+        self.scenes = {}
+        self.active_scene = None
+        self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        # bind screen to gui elements and set theme
+        tp.init(self.surface, tp.theme_classic)
         tp.set_style_attr("radius", 0.0)
         tp.set_style_attr("bck_color", (200, 200, 200))
+        pygame.display.set_caption("Scene Manager Demo")
 
-        self.active_scene = MainMenuScene(self.surface)
+        self.running = True
+
+    def add_scene(self, scene_name, scene_instance):
+        self.scenes[scene_name] = scene_instance
+
+    def switch_scene(self, scene_name):
+
+        new_scene = self.scenes.get(scene_name)
+        if new_scene:
+            self.active_scene = new_scene
+        else:
+            print(f"Error: Scene '{scene_name}' not found.")
+            # Potentially fall back to a default scene or handle error
 
     # do what you want with the display like in any pygame code you write
     def draw(self, events, mouse_rel):
         self.surface.fill((50, 50, 50))
         self.active_scene.draw(self.surface, events, mouse_rel)
+        self.surface.blit(self.active_scene.surface, (0, 0))
     #  self.chess.draw(Pos(100, 100), 800)
 
     def run(self):
-        clock = pygame.time.Clock()
-        playing = True
-        while playing:
-            clock.tick(60)
-            events = pygame.event.get()
-            mouse_rel = pygame.mouse.get_rel()
-            for e in events:
-                if e.type == pygame.QUIT:
-                    playing = False
-                else:  # do your stuff with events
-                    if e.type == pygame.KEYDOWN:
-                        if e.key == pygame.K_k:
-                            create_game()
-            self.draw(events, mouse_rel)  # do your stuff with display
-            # update Thorpy elements and draw them
+        while self.running:
+            dt = self.clock.tick(FPS) / 1000.0  # Delta time in seconds
+
+            # --- Event Handling ---
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.running = False
+                    elif event.key == pygame.K_1:
+                        self.switch_scene("scene1")
+                    elif event.key == pygame.K_2:
+                        self.switch_scene("scene2")
+
+                # Pass event to active scene
+                if self.active_scene:
+                    self.surface.fill(BLACK)  # Clear screen
+                    self.draw(None, None)
+
             pygame.display.flip()
+
         pygame.quit()
-
-
-class MainMenuScene(BaseScene):
-    def __init__(self, surface):
-        btn_create_game = tp.Button("Create Game")
-        btn_create_game.at_unclick = create_game
-
-        btn_join_game = tp.Button("Join Game")
-        btn_join_game.at_unclick = create_game
-        iface = tp.Group([btn_create_game, btn_join_game], mode="h")
-        iface.set_center(surface.get_width() / 2, 50)
-
-        self.updater = iface.get_updater()
-
-    def draw(self, surface, events, mouse_rel):
-        self.updater.update(events=events, mouse_rel=mouse_rel)
-
-
-class ChessScene:
-    def __init__(self, app: Application):
-        ...
 
 
 class BaseScene:
     def __init__(self, app):
         self.app = app
-        self.font = pygame.font.Font(None, 50)  # Generic font for scene titles
+        self.surface = pygame.Surface(
+            app.surface.get_size(), pygame.SRCALPHA, 32)
 
-    def handle_event(self, event):
-        """Handle a single event."""
-        pass
-
-    def update(self, dt):
-        """Update scene state."""
-        pass
-
-    def draw(self, screen):
+    def draw(self, surface, events, mouse_rel):
         """Draw scene content to the screen."""
         pass
-
-    def on_enter(self):
-        """Called when the scene becomes active."""
-        print(f"Entering {self.__class__.__name__}")
-
-    def on_exit(self):
-        """Called when the scene is exited."""
-        print(f"Exiting {self.__class__.__name__}")
 
 # --- Concrete Scene Implementations ---
 
 
-class SceneOne(BaseScene):
+class ChessScene(BaseScene):
     def __init__(self, app):
         super().__init__(app)
         self.title = "Scene One (Press 2 for Scene Two)"
@@ -121,11 +109,10 @@ class SceneOne(BaseScene):
 
         BOARD_BLACK = "0x545357"
         BOARD_WHITE = "0xf0e0d0"
-        BG = "0x8f5b26"
         size = 800
         pos = Pos(0, 0)
-        width = self.surface.width
-        height = self.surface.height
+        width = SCREEN_WIDTH
+        height = SCREEN_HEIGHT
         self.size = size
         x = pos.x
         y = pos.y
@@ -136,7 +123,6 @@ class SceneOne(BaseScene):
 
         if size < 80:
             size = 80
-
         # chess board has 8x8 fields, we make it easy
         # so that we can't render uneven looking boards
         size -= size % 8
@@ -153,68 +139,22 @@ class SceneOne(BaseScene):
                 else:
                     pygame.draw.rect(self.surface, BOARD_WHITE, rect)
 
-    def on_enter(self):
-        super().on_enter()
+    def draw(self, surface, events, mouse_rel):
         self._generate_chess_board()
 
-    def draw(self, screen):
-        # Draw title
-        title_surface = self.font.render(self.title, True, WHITE)
-        title_rect = title_surface.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        screen.blit(title_surface, title_rect)
 
-        # Draw shapes
-        for shape_data in self.shapes:
-            shape_type = shape_data[0]
-            color = shape_data[1]
-
-            if shape_type == "rect":
-                rect = shape_data[2]
-                pygame.draw.rect(screen, color, rect)
-            elif shape_type == "circle":
-                rect = shape_data[2]  # This is the bounding rect
-                radius = shape_data[3]
-                pygame.draw.circle(screen, color, rect.center, radius)
-            elif shape_type == "polygon":
-                points = shape_data[2]
-                pygame.draw.polygon(screen, color, points)
-
-        # Instructions
-        instr_font = pygame.font.Font(None, 30)
-        instr_text = "Press ESC to quit"
-        instr_surf = instr_font.render(instr_text, True, WHITE)
-        instr_rect = instr_surf.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30))
-        screen.blit(instr_surf, instr_rect)
-
-
-class SceneTwo(BaseScene):
+class MainScene(BaseScene):
     def __init__(self, app):
         super().__init__(app)
-        self.title = "Scene Two (Press 1 for Scene One)"
-        self.circles = []  # List to store (color, center_pos, radius)
+        btn_create_game = tp.Button("Create Game")
+        btn_create_game.at_unclick = create_game
 
-    def _generate_interface(self):
-        ...
+        btn_join_game = tp.Button("Join Game")
+        btn_join_game.at_unclick = create_game
+        iface = tp.Group([btn_create_game, btn_join_game], mode="h")
+        iface.set_center(app.surface.get_width() / 2, 50)
 
-    def on_enter(self):
-        super().on_enter()
-        self._generate_interface()
+        self.updater = iface.get_updater()
 
-    def draw(self, screen):
-        # Draw title
-        title_surface = self.font.render(self.title, True, WHITE)
-        title_rect = title_surface.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        screen.blit(title_surface, title_rect)
-
-        # Draw circles
-        for color, pos, radius in self.circles:
-            pygame.draw.circle(screen, color, pos, radius)
-
-        # Instructions
-        instr_font = pygame.font.Font(None, 30)
-        instr_text = "Press ESC to quit"
-        instr_surf = instr_font.render(instr_text, True, WHITE)
-        instr_rect = instr_surf.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30))
-        screen.blit(instr_surf, instr_rect)
+    def draw(self, surface, events, mouse_rel):
+        self.updater.update(events=events, mouse_rel=mouse_rel)
