@@ -1,23 +1,20 @@
-"""We show here how to let the user choose a value using another element."""
-
-
 import pygame
-import thorpy as tp
 from chess import ChessGrid, Pos
 
 FPS = 60
 BLACK = 0x20
 WHITE = 0x00
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 900
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 960
 
 
 class Button(object):
     def __init__(self, position, size, color, text):
         self.item = pygame.Surface(size)  # the visual button
-        self.item.fill(color)
+        self.rect = pygame.Rect((0, 0), size)  # the hitbox for clicks
+        self._cb = None  # callback function on click
 
-        self.rect = pygame.Rect((0, 0), size)
+        self.item.fill(color)
 
         font = pygame.font.SysFont(None, 32)
         text = font.render(text, True, (0, 0, 0))
@@ -32,10 +29,67 @@ class Button(object):
     def draw(self, screen):
         screen.blit(self.item, self.rect)
 
-    def is_clicked(self, event):
+    def is_clicked(self, event) -> bool:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 return self.rect.collidepoint(event.pos)
+
+    def on_clicked(self, func):
+        self._cb = func
+
+    def exec(self):
+        if self._cb is not None:
+            self._cb()
+
+
+class BaseScene:
+    def __init__(self, app):
+        self.app = app
+        self.elements = list()
+
+        self.surface = pygame.Surface(
+            app.surface.get_size(), pygame.SRCALPHA, 32)
+
+    def add(self, e):
+        self.elements.append(e)
+
+    def draw(self, surface, events, mouse_rel):
+        """Draw scene content to the screen."""
+        pass
+
+# --- Concrete Scene Implementations ---
+
+
+class ChessScene(BaseScene):
+    def __init__(self, app):
+        super().__init__(app)
+        self.title = "Scene One (Press 2 for Scene Two)"
+        self.chess = ChessGrid(self.app.surface)
+
+    def draw(self, surface, events, mouse_rel):
+        self.chess.draw(Pos(self.app.surface.width / 2 -
+                        self.chess.size / 2, 100), 800)
+
+
+class MainScene(BaseScene):
+    def __init__(self, app):
+        super().__init__(app)
+
+        create_game_btn = Button((300, 100), (200, 50),
+                                 (200, 200, 200), "Create Game")
+
+        create_game_btn.on_clicked(lambda: self.app.switch_scene("ingame"))
+        join_game_btn = Button((600, 100), (200, 50),
+                               (200, 200, 200), "Join Game")
+        self.add(create_game_btn)
+        self.add(join_game_btn)
+
+    def draw(self, surface, events, mouse_rel):
+        for e in self.elements:
+            e.draw(self.surface)
+
+    def create_game(self):
+        ...
 
 
 class Application:
@@ -45,10 +99,8 @@ class Application:
         self.scenes = {}
         self.active_scene = None
         self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
         # bind screen to gui elements and set theme
-        tp.init(self.surface, tp.theme_classic)
-        tp.set_style_attr("radius", 0.0)
-        tp.set_style_attr("bck_color", (200, 200, 200))
         pygame.display.set_caption("Scene Manager Demo")
 
         self.running = True
@@ -74,12 +126,13 @@ class Application:
 
     def run(self):
         while self.running:
-            dt = self.clock.tick(FPS) / 1000.0  # Delta time in seconds
+            # dt = self.clock.tick(FPS) / 1000.0  # Delta time in seconds
 
             # --- Event Handling ---
             for event in pygame.event.get():
-                if self.active_scene.btn.is_clicked(event):
-                    print("Klickyklick")
+                for e in self.active_scene.elements:
+                    if e.is_clicked(event):
+                        e.exec()
 
                 if event.type == pygame.QUIT:
                     self.running = False
@@ -88,9 +141,9 @@ class Application:
                     if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                         self.running = False
                     elif event.key == pygame.K_1:
-                        self.switch_scene("scene1")
+                        self.switch_scene("main")
                     elif event.key == pygame.K_2:
-                        self.switch_scene("scene2")
+                        self.switch_scene("ingame")
 
                 # Pass event to active scene
                 if self.active_scene:
@@ -100,92 +153,3 @@ class Application:
             pygame.display.flip()
 
         pygame.quit()
-
-
-class BaseScene:
-    def __init__(self, app):
-        self.app = app
-        self.surface = pygame.Surface(
-            app.surface.get_size(), pygame.SRCALPHA, 32)
-
-    def draw(self, surface, events, mouse_rel):
-        """Draw scene content to the screen."""
-        pass
-
-# --- Concrete Scene Implementations ---
-
-
-class ChessScene(BaseScene):
-    def __init__(self, app):
-        super().__init__(app)
-        self.title = "Scene One (Press 2 for Scene Two)"
-        # List to store (type, color, rect, [optional_params])
-        self.shapes = []
-
-    def _generate_chess_board(self):
-
-        BOARD_BLACK = "0x545357"
-        BOARD_WHITE = "0xf0e0d0"
-        size = 800
-        pos = Pos(0, 0)
-        width = SCREEN_WIDTH
-        height = SCREEN_HEIGHT
-        self.size = size
-        x = pos.x
-        y = pos.y
-        if x + size > width:
-            size = width - x
-        if y + size > height:
-            size = height - y
-
-        if size < 80:
-            size = 80
-        # chess board has 8x8 fields, we make it easy
-        # so that we can't render uneven looking boards
-        size -= size % 8
-
-        field_size = int(size / 8)
-        for xi in range(0, 8):
-            for yi in range(0, 8):
-                rect_x = x + (xi * field_size)
-                rect_y = y + ((7 - yi) * field_size)
-                rect = pygame.Rect(rect_x, rect_y, field_size, field_size)
-                # empty fields
-                if (xi + yi) % 2 == 0:
-                    pygame.draw.rect(self.surface, BOARD_BLACK, rect)
-                else:
-                    pygame.draw.rect(self.surface, BOARD_WHITE, rect)
-
-    def draw(self, surface, events, mouse_rel):
-        self._generate_chess_board()
-
-
-class MainScene(BaseScene):
-    def __init__(self, app):
-        super().__init__(app)
-        btn_create_game = tp.Button("Create Game")
-        btn_create_game.at_unclick = self.create_game
-
-        btn_join_game = tp.Button("Join Game")
-        btn_join_game.at_unclick = self.create_game
-        iface = tp.Group([btn_create_game, btn_join_game], mode="h")
-        iface.set_center(app.surface.get_width() / 2, 50)
-
-        self.btn = Button((100, 100), (200, 50),
-                          (250, 230, 230), "Hello World")
-        self.updater = iface.get_updater()
-
-    def draw(self, surface, events, mouse_rel):
-        self.updater.update(events=events, mouse_rel=mouse_rel)
-        self.btn.draw(self.surface)
-
-    def create_game(self):
-        prompt = tp.TextInput("", "Enter game mode")
-        alert = tp.AlertWithChoices(
-            "Create Game", choices=["Ok", "Cancel"], children=[prompt])
-        alert.launch_alone(None)
-        if alert.choice == "Cancel":
-            ...  # do what you want, like nothing.
-        elif alert.choice == "Ok":
-            self.app.switch_scene("scene2")
-            print("Mode: ", prompt.get_value())

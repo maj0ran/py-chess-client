@@ -1,4 +1,3 @@
-
 import pygame
 
 
@@ -36,6 +35,30 @@ EMPTY = 88
 NO_POS = Pos(9, 9)
 
 
+class Square():
+    def __init__(self, position, size, color):
+        self.item = pygame.Surface(size)  # the visual button
+        self.item.fill(color)
+        self.rect = pygame.Rect((0, 0), size)  # the hitbox for clicks
+        self.rect.topleft = position
+        self._cb = None  # callback function on click
+
+    def draw(self, screen):
+        screen.blit(self.item, self.rect)
+
+    def is_clicked(self, event) -> bool:
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                return self.rect.collidepoint(event.pos)
+
+    def on_clicked(self, func):
+        self._cb = func
+
+    def exec(self):
+        if self._cb is not None:
+            self._cb()
+
+
 class ChessGrid:
     def __init__(self, surface: pygame.Surface):
         self.surface = surface.subsurface(pygame.Rect(100, 100, 800, 800))
@@ -58,30 +81,6 @@ class ChessGrid:
         self.res[KING + BLACK] = pygame.image.load("res/k_b.png")
         self.res[PAWN + WHITE] = pygame.image.load("res/p_w.png")
         self.res[PAWN + BLACK] = pygame.image.load("res/p_b.png")
-
-        # Set all empty fields
-        self.field = [[EMPTY for _ in range(8)] for _ in range(8)]
-
-        self.field[0][0] = ROOK + WHITE
-        self.field[7][0] = ROOK + WHITE
-        self.field[0][7] = ROOK + BLACK
-        self.field[7][7] = ROOK + BLACK
-        self.field[1][0] = KNIGHT + WHITE
-        self.field[6][0] = KNIGHT + WHITE
-        self.field[1][7] = KNIGHT + BLACK
-        self.field[6][7] = KNIGHT + BLACK
-        self.field[2][0] = BISHOP + WHITE
-        self.field[5][0] = BISHOP + WHITE
-        self.field[2][7] = BISHOP + BLACK
-        self.field[5][7] = BISHOP + BLACK
-        self.field[3][0] = QUEEN + WHITE
-        self.field[3][7] = QUEEN + BLACK
-        self.field[4][7] = KING + BLACK
-        self.field[4][0] = KING + WHITE
-
-        for x in range(0, 8):
-            self.field[x][1] = PAWN + WHITE
-            self.field[x][6] = PAWN + BLACK
 
     def get(self, pos: Pos) -> int:
         return self.field[pos.x][pos.y]
@@ -139,18 +138,10 @@ class ChessGrid:
             for yi in range(0, 8):
                 rect_x = x + (xi * field_size)
                 rect_y = y + ((7 - yi) * field_size)
-                rect = pygame.Rect(rect_x, rect_y, field_size, field_size)
-                # empty fields
                 if (xi + yi) % 2 == 0:
-                    pygame.draw.rect(self.surface, BOARD_BLACK, rect)
+                    field_color = BOARD_BLACK
                 else:
-                    pygame.draw.rect(self.surface, BOARD_WHITE, rect)
-
-                # selected field
-                if self.selected == Pos(xi, yi):
-                    pygame.draw.rect(self.surface, "0x65a326", rect)
-
-                # pieces
-                if self.get(Pos(xi, yi)) != EMPTY:
-                    res = self.get_res(self.get(Pos(xi, yi)))
-                    self.surface.blit(res, (rect_x, rect_y))
+                    field_color = BOARD_WHITE
+                square = Square((rect_x, rect_y),
+                                (field_size, field_size), field_color)
+                square.draw(self.surface)

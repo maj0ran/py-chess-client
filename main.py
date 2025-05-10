@@ -1,6 +1,6 @@
 #!/bin/python
 
-from interface import *
+from interface import Application, ChessScene, MainScene
 from net import Client
 
 WIN_WIDTH = 1280
@@ -35,10 +35,10 @@ app = Application()
 ingame_scene = ChessScene(app)
 main_menu = MainScene(app)
 
-app.add_scene("scene1", main_menu)
-app.add_scene("scene2", ingame_scene)
+app.add_scene("main", main_menu)
+app.add_scene("ingame", ingame_scene)
 
 # Set initial scene
-app.switch_scene("scene1")
+app.switch_scene("main")
 
 app.run()
