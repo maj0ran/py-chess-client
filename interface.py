@@ -2,7 +2,6 @@
 
 
 import pygame
-from pygame import Surface
 import thorpy as tp
 from chess import ChessGrid, Pos
 
@@ -13,15 +12,30 @@ SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 900
 
 
-def create_game():
-    prompt = tp.TextInput("", "Enter game mode")
-    alert = tp.AlertWithChoices(
-        "Create Game", choices=["Ok", "Cancel"], children=[prompt])
-    alert.launch_alone(self.draw)
-    if alert.choice == "Cancel":
-        ...  # do what you want, like nothing.
-    elif alert.choice == "Ok":
-        ...
+class Button(object):
+    def __init__(self, position, size, color, text):
+        self.item = pygame.Surface(size)  # the visual button
+        self.item.fill(color)
+
+        self.rect = pygame.Rect((0, 0), size)
+
+        font = pygame.font.SysFont(None, 32)
+        text = font.render(text, True, (0, 0, 0))
+        text_rect = text.get_rect()
+        text_rect.center = self.rect.center
+
+        self.item.blit(text, text_rect)
+
+        # set after centering text
+        self.rect.topleft = position
+
+    def draw(self, screen):
+        screen.blit(self.item, self.rect)
+
+    def is_clicked(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                return self.rect.collidepoint(event.pos)
 
 
 class Application:
@@ -64,11 +78,14 @@ class Application:
 
             # --- Event Handling ---
             for event in pygame.event.get():
+                if self.active_scene.btn.is_clicked(event):
+                    print("Klickyklick")
+
                 if event.type == pygame.QUIT:
                     self.running = False
 
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                         self.running = False
                     elif event.key == pygame.K_1:
                         self.switch_scene("scene1")
@@ -147,14 +164,28 @@ class MainScene(BaseScene):
     def __init__(self, app):
         super().__init__(app)
         btn_create_game = tp.Button("Create Game")
-        btn_create_game.at_unclick = create_game
+        btn_create_game.at_unclick = self.create_game
 
         btn_join_game = tp.Button("Join Game")
-        btn_join_game.at_unclick = create_game
+        btn_join_game.at_unclick = self.create_game
         iface = tp.Group([btn_create_game, btn_join_game], mode="h")
         iface.set_center(app.surface.get_width() / 2, 50)
 
+        self.btn = Button((100, 100), (200, 50),
+                          (250, 230, 230), "Hello World")
         self.updater = iface.get_updater()
 
     def draw(self, surface, events, mouse_rel):
         self.updater.update(events=events, mouse_rel=mouse_rel)
+        self.btn.draw(self.surface)
+
+    def create_game(self):
+        prompt = tp.TextInput("", "Enter game mode")
+        alert = tp.AlertWithChoices(
+            "Create Game", choices=["Ok", "Cancel"], children=[prompt])
+        alert.launch_alone(None)
+        if alert.choice == "Cancel":
+            ...  # do what you want, like nothing.
+        elif alert.choice == "Ok":
+            self.app.switch_scene("scene2")
+            print("Mode: ", prompt.get_value())
