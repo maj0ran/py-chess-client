@@ -1,45 +1,9 @@
 import pygame
+from gui.button import Button
 from chess import ChessGrid, Pos
 
-FPS = 60
-BLACK = 0x20
-WHITE = 0x00
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 960
-
-
-class Button(object):
-    def __init__(self, position, size, color, text):
-        self.item = pygame.Surface(size)  # the visual button
-        self.rect = pygame.Rect((0, 0), size)  # the hitbox for clicks
-        self._cb = None  # callback function on click
-
-        self.item.fill(color)
-
-        font = pygame.font.SysFont(None, 32)
-        text = font.render(text, True, (0, 0, 0))
-        text_rect = text.get_rect()
-        text_rect.center = self.rect.center
-
-        self.item.blit(text, text_rect)
-
-        # set after centering text
-        self.rect.topleft = position
-
-    def draw(self, screen):
-        screen.blit(self.item, self.rect)
-
-    def is_clicked(self, event) -> bool:
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                return self.rect.collidepoint(event.pos)
-
-    def on_clicked(self, func):
-        self._cb = func
-
-    def exec(self):
-        if self._cb is not None:
-            self._cb()
 
 
 class BaseScene:
@@ -54,21 +18,16 @@ class BaseScene:
         self.elements.append(e)
 
     def draw(self, surface, events, mouse_rel):
-        """Draw scene content to the screen."""
         pass
-
-# --- Concrete Scene Implementations ---
 
 
 class ChessScene(BaseScene):
     def __init__(self, app):
         super().__init__(app)
-        self.title = "Scene One (Press 2 for Scene Two)"
-        self.chess = ChessGrid(self.app.surface)
+        self.chess = ChessGrid((100, 100), (800, 800))
 
     def draw(self, surface, events, mouse_rel):
-        self.chess.draw(Pos(self.app.surface.width / 2 -
-                        self.chess.size / 2, 100), 800)
+        self.chess.draw(surface)
 
 
 class MainScene(BaseScene):
@@ -140,14 +99,10 @@ class Application:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                         self.running = False
-                    elif event.key == pygame.K_1:
-                        self.switch_scene("main")
-                    elif event.key == pygame.K_2:
-                        self.switch_scene("ingame")
 
                 # Pass event to active scene
                 if self.active_scene:
-                    self.surface.fill(BLACK)  # Clear screen
+                    self.surface.fill((0, 0, 0))  # Clear screen
                     self.draw(None, None)
 
             pygame.display.flip()
