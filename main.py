@@ -26,7 +26,7 @@ PORT = 7878
 #
 #                         print("setting: ", x, y, str(piece))
 #
-#                         grid.set(Pos(x, y), piece)
+#                         grid.set((x, y), piece)
 
 
 app = Application()

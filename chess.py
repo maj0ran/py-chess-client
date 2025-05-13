@@ -2,18 +2,6 @@ import pygame
 from gui import GUIObject
 
 
-class Pos:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Pos):
-            return NotImplemented
-
-        return (self.x == other.x) and (self.y == other.y)
-
-
 BOARD_BLACK = "0x545357"
 BOARD_WHITE = "0xf0e0d0"
 BG = "0x8f5b26"
@@ -30,9 +18,6 @@ KNIGHT = 78
 PAWN = 80
 
 EMPTY = 88
-
-
-NO_POS = Pos(9, 9)
 
 
 class Square(GUIObject):
@@ -60,9 +45,9 @@ class Square(GUIObject):
 class ChessGrid(GUIObject):
     def __init__(self, position, size):
         super().__init__(position, size)
-        self.selected = Pos(0, 0)
-        self.pos = Pos(0, 0)
-        self.size = 0
+        self.selected = (0, 0)
+        self.pos = position
+        self.size = size[0]
         self.fields = list()
 
         # create map with the piece images
@@ -98,40 +83,36 @@ class ChessGrid(GUIObject):
                 #    square.draw(self.item)
                 self.fields.append(square)
 
-    def get(self, pos: Pos) -> int:
+    def get(self, pos: ()) -> int:
         return self.field[pos.x][pos.y]
 
-    def set(self, pos: Pos, val: int):
+    def set(self, pos: (), val: int):
         self.field[pos.x][pos.y] = val
 
     def get_res(self, val: int) -> pygame.Surface:
         return self.res[val]
 
-    def get_field(self, x, y) -> Pos:
+    def get_field(self, x, y) -> ():
         x = x - self.pos.x
         y = y - self.pos.y
 
         if x < 0 or x > self.size or y < 0 or y > self.size:
-            return NO_POS
+            return None
 
         x = int(x / (self.size / 8))
         y = 7 - int(y / (self.size / 8))
 
-        return Pos(x, y)
+        return (x, y)
 
     def select(self, x, y):
         self.selected = self.get_field(x, y)
 
-    def move(self, src: Pos, dst: Pos):
-        if src == NO_POS or dst == NO_POS:
-            return
-
+    def move(self, src: (), dst: ()):
         piece = self.get(src)
         self.set(src, 0)
         self.set(dst, piece)
 
     def draw(self, screen):
-        self.item.fill((255, 0, 0))
-        screen.blit(self.item, self.hitbox)
         for f in self.fields:
-            self.item.blit(f.item, f.hitbox)
+            f.draw(self.item)
+        screen.blit(self.item, self.hitbox)

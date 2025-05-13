@@ -1,6 +1,6 @@
 import pygame
 from gui.button import Button
-from chess import ChessGrid, Pos
+from chess import ChessGrid
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 960
