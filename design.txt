@@ -1,0 +1,145 @@
+This is a classic design question in GUI architecture involving **bidirectional dependencies**, which, if not handled well, can lead to **circular references**, **tight coupling**, and **poor maintainability**.
+
+Here are several idiomatic and clean approaches to **circumvent the circular reference** issue in a Python GUI architecture where:
+
+* The `Application` manages `Scenes`
+* Each `Scene` might need to trigger a scene switch (which is managed by the `Application`)
+
+---
+
+## ✅ Recommended Approaches
+
+### 1. **Use a Controller or Event Dispatcher (Observer Pattern)**
+
+**Architecture:**
+
+* The `Application` owns a `SceneManager` or acts as a **Controller**.
+* Scenes don't reference the Application directly.
+* Instead, they **emit events or callbacks** when they want to switch scenes.
+
+**Implementation Outline:**
+
+```python
+class Scene:
+    def __init__(self, on_switch_scene):
+        self.on_switch_scene = on_switch_scene
+
+    def button_pressed(self):
+        # Tell application to switch scenes
+        self.on_switch_scene("main_menu")
+
+
+class Application:
+    def __init__(self):
+        self.scenes = {
+            "main_menu": Scene(self.switch_scene),
+            "game": Scene(self.switch_scene),
+        }
+        self.current_scene = self.scenes["main_menu"]
+
+    def switch_scene(self, scene_name):
+        self.current_scene = self.scenes[scene_name]
+        print(f"Switched to {scene_name}")
+
+app = Application()
+app.current_scene.button_pressed()  # Triggers switch
+```
+
+✅ **Pros:**
+
+* No circular reference
+* Loose coupling
+* Scenes are easily testable/reusable
+
+---
+
+### 2. **Inversion of Control via Callbacks or Commands**
+
+Pass a **command object** or **callback function** into the scene that abstracts the actual switch.
+
+```python
+class Scene:
+    def __init__(self, switch_command):
+        self.switch_command = switch_command
+
+    def user_interaction(self):
+        self.switch_command("settings")
+
+class Application:
+    def __init__(self):
+        def switcher(name): self.switch_scene(name)
+        self.scenes = {
+            "settings": Scene(switcher),
+            "main": Scene(switcher)
+        }
+        self.current_scene = self.scenes["main"]
+
+    def switch_scene(self, name):
+        print("Switching to:", name)
+        self.current_scene = self.scenes[name]
+```
+
+---
+
+### 3. **Event Bus (Pub/Sub)**
+
+Introduce a lightweight **event system** where scenes **publish events**, and the application **subscribes** to them.
+
+```python
+class EventBus:
+    def __init__(self):
+        self.listeners = {}
+
+    def subscribe(self, event, callback):
+        self.listeners.setdefault(event, []).append(callback)
+
+    def emit(self, event, *args):
+        for cb in self.listeners.get(event, []):
+            cb(*args)
+
+# In Application
+bus = EventBus()
+bus.subscribe("switch_scene", lambda name: app.switch_scene(name))
+
+# In Scene
+bus.emit("switch_scene", "settings")
+```
+
+✅ Ideal for larger, more decoupled systems.
+
+---
+
+## ❌ Naive Approach (Leads to Circular Dependency)
+
+```python
+class Scene:
+    def __init__(self, app):
+        self.app = app
+
+    def button_clicked(self):
+        self.app.switch_scene("game")
+
+class Application:
+    def __init__(self):
+        self.scene = Scene(self)  # Circular: Scene holds app, app holds scene
+```
+
+❌ Not scalable
+❌ Difficult to test
+❌ Can cause memory leaks if not managed properly (esp. in complex UIs)
+
+---
+
+## Summary Table
+
+| Approach                 | Coupling | Reusability | Recommended Use Case              |
+| ------------------------ | -------- | ----------- | --------------------------------- |
+| Callback / Command       | Low      | High        | Small to mid-sized apps           |
+| Event Bus / Observer     | Low      | High        | Mid to large apps                 |
+| Controller Pattern       | Low      | High        | MVC / MVVM-style clean separation |
+| Direct Reference (Naive) | High     | Low         | Quick prototypes only             |
+
+---
+
+Let me know if you want a full example using `tkinter`, `PyQt`, or another GUI framework.
+

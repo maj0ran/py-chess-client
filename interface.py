@@ -21,6 +21,11 @@ class BaseScene:
         pass
 
 
+"""
+Ingame Scene with a chess board
+"""
+
+
 class ChessScene(BaseScene):
     def __init__(self, app):
         super().__init__(app)
@@ -28,6 +33,11 @@ class ChessScene(BaseScene):
 
     def draw(self, surface, events, mouse_rel):
         self.chess.draw(surface)
+
+
+"""
+Main menu to create and join games
+"""
 
 
 class MainScene(BaseScene):
@@ -81,7 +91,6 @@ class Application:
         self.surface.fill((50, 50, 50))
         self.active_scene.draw(self.surface, events, mouse_rel)
         self.surface.blit(self.active_scene.surface, (0, 0))
-    #  self.chess.draw(Pos(100, 100), 800)
 
     def run(self):
         while self.running:
@@ -102,7 +111,6 @@ class Application:
 
                 # Pass event to active scene
                 if self.active_scene:
-                    self.surface.fill((0, 0, 0))  # Clear screen
                     self.draw(None, None)
 
             pygame.display.flip()
