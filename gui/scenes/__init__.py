@@ -2,8 +2,9 @@ import pygame
 
 
 class BaseScene:
-    def __init__(self, size):
+    def __init__(self, size, eventbus):
         self.elements = list()
+        self.bus = eventbus
 
         self.surface = pygame.Surface(
             size, pygame.SRCALPHA, 32)
@@ -18,5 +19,4 @@ class BaseScene:
     def handle(self, event):
         for e in self.elements:
             if e.is_clicked(event):
-                cmd = e.exec()
-                return cmd
+                e.exec()

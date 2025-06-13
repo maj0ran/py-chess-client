@@ -1,14 +1,29 @@
 #!/bin/python
 
-from gui.interface import Application
+from gui.interface import UserInterface
 from net import Client
+from eventbus import EventBus, AppEvent
+import asyncio
+
+HOST = "127.0.0.1"
+PORT = 7878
+
+
+class Application:
+    def __init__(self):
+        self.bus = EventBus()
+        self.ui = UserInterface(self.bus)
+        self.net = Client(HOST, PORT, self.bus)
+
+    def run(self):
+        asyncio.run(self.net.run())
+        self.ui.run()
+
 
 WIN_WIDTH = 1280
 WIN_HEIGHT = 960
 
 # socket setup
-HOST = "127.0.0.1"
-PORT = 7878
 
 # client = Client(HOST, PORT)
 #

@@ -1,6 +1,12 @@
 from . import BaseScene
 import pygame
-from gui import GUIObject
+from gui import GUIObject, Image
+
+
+class ChessLogic:
+    def __init__(self):
+        ...
+
 
 """
 Ingame Scene with a chess board
@@ -17,8 +23,8 @@ class Square(GUIObject):
 
 
 class ChessScene(BaseScene):
-    def __init__(self, size):
-        super().__init__(size)
+    def __init__(self, size, eventbus):
+        super().__init__(size, eventbus)
 
         self.board_x = 100
         self.board_y = 100
@@ -60,22 +66,6 @@ class ChessScene(BaseScene):
                 self.select(coord[0], coord[1])
 
     def init_chess_board(self, pos, size):
-        # create map with the piece images
-        self.res = {}
-        self.res[EMPTY] = None,
-        self.res[ROOK + WHITE] = pygame.image.load("res/r_w.png")
-        self.res[ROOK + BLACK] = pygame.image.load("res/r_b.png")
-        self.res[KNIGHT + WHITE] = pygame.image.load("res/n_w.png")
-        self.res[KNIGHT + BLACK] = pygame.image.load("res/n_b.png")
-        self.res[BISHOP + WHITE] = pygame.image.load("res/b_w.png")
-        self.res[BISHOP + BLACK] = pygame.image.load("res/b_b.png")
-        self.res[QUEEN + WHITE] = pygame.image.load("res/q_w.png")
-        self.res[QUEEN + BLACK] = pygame.image.load("res/q_b.png")
-        self.res[KING + WHITE] = pygame.image.load("res/k_w.png")
-        self.res[KING + BLACK] = pygame.image.load("res/k_b.png")
-        self.res[PAWN + WHITE] = pygame.image.load("res/p_w.png")
-        self.res[PAWN + BLACK] = pygame.image.load("res/p_b.png")
-
         square_size = size / 8
         x = pos[0]
         y = pos[1]
@@ -92,6 +82,25 @@ class ChessScene(BaseScene):
                                 square_size, square_color, xi, yi)
                 #    square.draw(self.item)
                 self.add(square)
+
+        # create map with the piece images
+        self.res = {}
+        self.res[EMPTY] = None,
+        self.res[ROOK + WHITE] = pygame.image.load("res/r_w.png")
+        self.res[ROOK + BLACK] = pygame.image.load("res/r_b.png")
+        self.res[KNIGHT + WHITE] = pygame.image.load("res/n_w.png")
+        self.res[KNIGHT + BLACK] = pygame.image.load("res/n_b.png")
+        self.res[BISHOP + WHITE] = pygame.image.load("res/b_w.png")
+        self.res[BISHOP + BLACK] = pygame.image.load("res/b_b.png")
+        self.res[QUEEN + WHITE] = pygame.image.load("res/q_w.png")
+        self.res[QUEEN + BLACK] = pygame.image.load("res/q_b.png")
+        self.res[KING + WHITE] = pygame.image.load("res/k_w.png")
+        self.res[KING + BLACK] = pygame.image.load("res/k_b.png")
+        self.res[PAWN + WHITE] = pygame.image.load("res/p_w.png")
+        self.res[PAWN + BLACK] = pygame.image.load("res/p_b.png")
+
+        img = Image((200, 200), (100, 100), self.res[ROOK + WHITE])
+        self.add(img)
 
 
 BOARD_BLACK = "0x545357"

@@ -6,12 +6,13 @@ class Command:
         self.param = param
 
 
-class GUIObject():
+class GUIObject:
     def __init__(self, pos, size):
+        self.pos = pos
+        self.size = size
         self.item = pygame.Surface(size)
         self.hitbox = pygame.Rect(pos, size)
         self.hitbox.topleft = pos
-        self.children = []
 
     def draw(self, screen):
         screen.blit(self.item, self.hitbox)
@@ -28,5 +29,11 @@ class GUIObject():
         if self._cb is not None:
             return self._cb()
 
-    def add_child(self, obj):
-        self.children.append(obj)
+
+class Image(GUIObject):
+    def __init__(self, pos, size, img):
+        super().__init__(pos, size)
+        self.img = img
+
+    def draw(self, screen):
+        screen.blit(self.img, self.pos)
