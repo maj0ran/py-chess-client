@@ -2,8 +2,7 @@ import pygame
 
 from gui.scenes.main_scene import MainScene
 from gui.scenes.chess_scene import ChessScene
-from gui import Command
-from eventbus import EventBus, AppEvent
+from eventbus import AppEvent
 
 
 SCREEN_WIDTH = 1280
@@ -24,7 +23,7 @@ class UserInterface:
             "main": MainScene(size, eventbus),
             "ingame": ChessScene(size, eventbus)
         }
-
+        self.bus.register(AppEvent.NEW_GAME, self.on_new_game)
         self.bus.register(AppEvent.SWITCH_SCENE, self.switch_scene)
         self.switch_scene("main")
 
@@ -65,3 +64,10 @@ class UserInterface:
             pygame.display.flip()
 
         pygame.quit()
+
+    def on_new_game(self, game_info):
+        hoster = game_info.hoster_id
+        game_id = game_info.game_id
+
+        if hoster == 1:
+            self.switch_scene("ingame")

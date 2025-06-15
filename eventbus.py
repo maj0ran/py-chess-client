@@ -14,16 +14,13 @@ class AppEvent(Enum):
     CREATE_GAME_REQUESTED = auto()
     MESSAGE_RECEIVED = auto()
 
+    NEW_GAME = auto()
+
     # internal GUI events
     SWITCH_SCENE = auto()
 
 
 class EventBus:
-    """
-    A simple, lightweight, and memory-safe event bus.
-    It uses weak references to listeners to prevent memory leaks from circular references.
-    """
-
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._listeners = defaultdict(list)
@@ -36,7 +33,6 @@ class EventBus:
         weak reference, allowing its parent object to be garbage collected.
         """
         self._listeners[event].append(callback)
-        print(self._listeners)
         self.logger.info(
             f"Registered {getattr(callback, '__qualname__', repr(callback))} for event {event.name}")
 
@@ -45,7 +41,8 @@ class EventBus:
         self._listeners[event].discard(
             callback)  # discard() doesn't raise an error if not found
         self.logger.info(
-            f"Unregistered {getattr(callback, '__qualname__', repr(callback))} from event {event.name}")
+            f"Unregistered {getattr(callback, '__qualname__', repr(callback))}"
+            f"from event {event.name}")
 
     def post(self, event: AppEvent, **kwargs):
         """Post an event to all registered listeners."""
